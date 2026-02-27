@@ -1,0 +1,856 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>OpenClaw多Agent协作开发实践：从原理到实践 | C的博客</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="Cocos">
+    
+
+    
+    <meta name="description" content="OpenClaw 多 Agent 协作开发实战：从原理到实践前言在多 Agent 系统（Multi-Agent System）越来越受关注的今天，如何在实际项目中高效地协调多个 AI Agent 协作完成任务，是一个值得深入探讨的话题。本文将分享我在使用 OpenClaw 进行多 Agent 开发的一些想法，从架构原理到实战案例，深入了解一下多Agent设计思路。这篇文章主要是AI写的，节约了不少">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OpenClaw多Agent协作开发实践：从原理到实践">
+<meta property="og:url" content="http://yoursite.com/2026/02/26/openclaw-sub-agent-design/index.html">
+<meta property="og:site_name" content="C的博客">
+<meta property="og:description" content="OpenClaw 多 Agent 协作开发实战：从原理到实践前言在多 Agent 系统（Multi-Agent System）越来越受关注的今天，如何在实际项目中高效地协调多个 AI Agent 协作完成任务，是一个值得深入探讨的话题。本文将分享我在使用 OpenClaw 进行多 Agent 开发的一些想法，从架构原理到实战案例，深入了解一下多Agent设计思路。这篇文章主要是AI写的，节约了不少">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-02-26T03:30:00.000Z">
+<meta property="article:modified_time" content="2026-02-27T00:33:22.720Z">
+<meta property="article:author" content="Cocos">
+<meta property="article:tag" content="OpenClaw">
+<meta property="article:tag" content="Multi-Agent">
+<meta property="article:tag" content="AI协作">
+<meta name="twitter:card" content="summary">
+
+    
+    <link rel="alternative" href="/atom.xml" title="C的博客" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/%02.css">
+<link rel="stylesheet" href="/.css">
+
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="C的博客">C的博客</a></h1>
+				<h2 class="blog-motto">不识庐山真面目,只缘身在此山中.</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/tags">标签</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2026/02/26/openclaw-sub-agent-design/" title="OpenClaw多Agent协作开发实践：从原理到实践" itemprop="url">OpenClaw多Agent协作开发实践：从原理到实践</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Cocos" target="_blank" itemprop="author">Cocos</a>
+		
+  <p class="article-time">
+    <time datetime="2026-02-26T03:30:00.000Z" itemprop="datePublished"> 发表于 2026-02-26</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#OpenClaw-%E5%A4%9A-Agent-%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91%E5%AE%9E%E6%88%98%EF%BC%9A%E4%BB%8E%E5%8E%9F%E7%90%86%E5%88%B0%E5%AE%9E%E8%B7%B5"><span class="toc-number">1.</span> <span class="toc-text">OpenClaw 多 Agent 协作开发实战：从原理到实践</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81OpenClaw-%E7%9A%84%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1"><span class="toc-number">1.2.</span> <span class="toc-text">一、OpenClaw 的架构设计</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="toc-number">1.2.1.</span> <span class="toc-text">1.1 核心概念</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%A4%9A-Agent-%E5%8D%8F%E4%BD%9C%E7%9A%84%E6%A0%B8%E5%BF%83%E6%9C%BA%E5%88%B6"><span class="toc-number">1.3.</span> <span class="toc-text">二、多 Agent 协作的核心机制</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-Agent-%E7%9A%84%E5%88%9B%E5%BB%BA%E4%B8%8E%E7%AE%A1%E7%90%86"><span class="toc-number">1.3.1.</span> <span class="toc-text">2.1 Agent 的创建与管理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-Agent-%E9%97%B4%E9%80%9A%E4%BF%A1"><span class="toc-number">1.3.2.</span> <span class="toc-text">2.2 Agent 间通信</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%96%B9%E5%BC%8F%E4%B8%80%EF%BC%9A%E7%9B%B4%E6%8E%A5%E6%B6%88%E6%81%AF%E4%BC%A0%E9%80%92%EF%BC%88sessions-send%EF%BC%89"><span class="toc-number">1.3.2.1.</span> <span class="toc-text">方式一：直接消息传递（sessions_send）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%96%B9%E5%BC%8F%E4%BA%8C%EF%BC%9A%E6%96%87%E4%BB%B6%E9%A9%B1%E5%8A%A8%E5%8D%8F%E4%BD%9C%EF%BC%88%E6%8E%A8%E8%8D%90%EF%BC%89"><span class="toc-number">1.3.2.2.</span> <span class="toc-text">方式二：文件驱动协作（推荐）</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B%EF%BC%9A%E8%B4%AA%E5%90%83%E8%9B%87%E6%B8%B8%E6%88%8F%E5%BC%80%E5%8F%91"><span class="toc-number">1.4.</span> <span class="toc-text">三、实战案例：贪吃蛇游戏开发</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E9%A1%B9%E7%9B%AE%E8%83%8C%E6%99%AF"><span class="toc-number">1.4.1.</span> <span class="toc-text">3.1 项目背景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-Agent-%E5%88%86%E5%B7%A5"><span class="toc-number">1.4.2.</span> <span class="toc-text">3.2 Agent 分工</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E4%B8%BB-Agent-%E7%9A%84%E5%8D%8F%E8%B0%83%E6%8E%A7%E5%88%B6%E6%9C%BA%E5%88%B6"><span class="toc-number">1.4.3.</span> <span class="toc-text">3.3 主 Agent 的协调控制机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-%E7%AC%AC%E4%B8%80%E8%BD%AE%E5%BC%80%E5%8F%91%EF%BC%9A%E5%9F%BA%E7%A1%80%E6%B8%B8%E6%88%8F"><span class="toc-number">1.4.4.</span> <span class="toc-text">3.4 第一轮开发：基础游戏</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-5-%E7%AC%AC%E4%BA%8C%E8%BD%AE%E8%BF%AD%E4%BB%A3%EF%BC%9A%E8%B5%9B%E5%8D%9A%E6%9C%8B%E5%85%8B%E9%A3%8E%E6%A0%BC%E6%94%B9%E9%80%A0"><span class="toc-number">1.4.5.</span> <span class="toc-text">3.5 第二轮迭代：赛博朋克风格改造</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-6-%E9%A1%B9%E7%9B%AE%E4%BA%A7%E5%87%BA"><span class="toc-number">1.4.6.</span> <span class="toc-text">3.6 项目产出</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E9%81%87%E5%88%B0%E7%9A%84%E9%97%AE%E9%A2%98%E4%B8%8E%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">1.5.</span> <span class="toc-text">四、遇到的问题与解决方案</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E9%97%AE%E9%A2%98%E4%B8%80%EF%BC%9ASession-%E5%8F%91%E9%80%81%E8%B6%85%E6%97%B6"><span class="toc-number">1.5.1.</span> <span class="toc-text">4.1 问题一：Session 发送超时</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E9%97%AE%E9%A2%98%E4%BA%8C%EF%BC%9AChannel-%E8%AE%BF%E9%97%AE%E9%99%90%E5%88%B6"><span class="toc-number">1.5.2.</span> <span class="toc-text">4.2 问题二：Channel 访问限制</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E5%A4%9A-Agent-%E5%8D%8F%E4%BD%9C%E7%9A%84%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">1.6.</span> <span class="toc-text">五、多 Agent 协作的最佳实践</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E5%B7%A5%E4%BD%9C%E6%B5%81%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99"><span class="toc-number">1.6.1.</span> <span class="toc-text">5.1 工作流设计原则</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E6%8E%A8%E8%8D%90%E7%9A%84%E5%8D%8F%E4%BD%9C%E6%A8%A1%E5%BC%8F"><span class="toc-number">1.6.2.</span> <span class="toc-text">5.2 推荐的协作模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E4%BC%9A%E8%AF%9D%E7%AE%A1%E7%90%86%E5%BB%BA%E8%AE%AE"><span class="toc-number">1.6.3.</span> <span class="toc-text">5.3 会话管理建议</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%80%BB%E7%BB%93%E4%B8%8E%E5%B1%95%E6%9C%9B"><span class="toc-number">1.7.</span> <span class="toc-text">六、总结与展望</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E6%A0%B8%E5%BF%83%E6%94%B6%E8%8E%B7"><span class="toc-number">1.7.1.</span> <span class="toc-text">6.1 核心收获</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">1.7.2.</span> <span class="toc-text">6.2 适用场景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E6%9C%AA%E6%9D%A5%E5%B1%95%E6%9C%9B"><span class="toc-number">1.7.3.</span> <span class="toc-text">6.3 未来展望</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%99%84%E5%BD%95%EF%BC%9A%E5%AE%8C%E6%95%B4-API-%E5%8F%82%E8%80%83"><span class="toc-number">1.8.</span> <span class="toc-text">附录：完整 API 参考</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E5%AD%90-Agent"><span class="toc-number">1.8.1.</span> <span class="toc-text">创建子 Agent</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%91%E9%80%81%E6%B6%88%E6%81%AF"><span class="toc-number">1.8.2.</span> <span class="toc-text">发送消息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%A1%E7%90%86%E5%AD%90-Agent"><span class="toc-number">1.8.3.</span> <span class="toc-text">管理子 Agent</span></a></li></ol></li></ol></li></ol>
+		
+		</div>
+		
+		<h1 id="OpenClaw-多-Agent-协作开发实战：从原理到实践"><a href="#OpenClaw-多-Agent-协作开发实战：从原理到实践" class="headerlink" title="OpenClaw 多 Agent 协作开发实战：从原理到实践"></a>OpenClaw 多 Agent 协作开发实战：从原理到实践</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在多 Agent 系统（Multi-Agent System）越来越受关注的今天，如何在实际项目中高效地协调多个 AI Agent 协作完成任务，是一个值得深入探讨的话题。本文将分享我在使用 <strong>OpenClaw</strong> 进行多 Agent 开发的一些想法，从架构原理到实战案例，深入了解一下多Agent设计思路。这篇文章主要是AI写的，节约了不少时间。</p>
+<hr>
+<h2 id="一、OpenClaw-的架构设计"><a href="#一、OpenClaw-的架构设计" class="headerlink" title="一、OpenClaw 的架构设计"></a>一、OpenClaw 的架构设计</h2><h3 id="1-1-核心概念"><a href="#1-1-核心概念" class="headerlink" title="1.1 核心概念"></a>1.1 核心概念</h3><p>OpenClaw 的架构可以用三层模型来理解：</p>
+<figure class="highlight pgsql"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────┐</span><br><span class="line">│  用户界面层 (WebChat / CLI / API)        │</span><br><span class="line">│  - 人类与系统交互的入口                   │</span><br><span class="line">└──────────────┬──────────────────────────┘</span><br><span class="line">               │</span><br><span class="line">┌──────────────▼──────────────────────────┐</span><br><span class="line">│  OpenClaw Gateway (Node.js)             │</span><br><span class="line">│  - <span class="keyword">Session</span> 管理器                        │</span><br><span class="line">│  - 每个 <span class="keyword">Session</span> = 独立对话上下文         │</span><br><span class="line">│  - 支持多 <span class="keyword">Session</span> 并行                   │</span><br><span class="line">└──────────────┬──────────────────────────┘</span><br><span class="line">               │</span><br><span class="line">    ┌──────────┼──────────┐</span><br><span class="line">    ▼          ▼          ▼</span><br><span class="line">┌───────┐  ┌───────┐  ┌───────┐</span><br><span class="line">│Agent <span class="number">1</span>│  │Agent <span class="number">2</span>│  │Agent <span class="number">3</span>│</span><br><span class="line">│<span class="keyword">Session</span>│  │<span class="keyword">Session</span>│  │<span class="keyword">Session</span>│</span><br><span class="line">└───┬───┘  └───┬───┘  └───┬───┘</span><br><span class="line">    │          │          │</span><br><span class="line">    └──────────┼──────────┘</span><br><span class="line">               ▼</span><br><span class="line">    ┌─────────────────────┐</span><br><span class="line">    │  AI Provider        │</span><br><span class="line">    │  (Kimi/Claude/GPT)  │</span><br><span class="line">    └─────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键理解：</strong></p>
+<ul>
+<li><strong>Agent</strong> 不是独立的 AI 实例，而是带有特定上下文的 <strong>Session</strong></li>
+<li>所有 Agent 共享同一个 AI Provider，但通过不同的 Session 隔离上下文</li>
+<li>每个 Session 有自己的历史记录、系统提示词（System Prompt）、标签（Label）</li>
+</ul>
+<hr>
+<h2 id="二、多-Agent-协作的核心机制"><a href="#二、多-Agent-协作的核心机制" class="headerlink" title="二、多 Agent 协作的核心机制"></a>二、多 Agent 协作的核心机制</h2><h3 id="2-1-Agent-的创建与管理"><a href="#2-1-Agent-的创建与管理" class="headerlink" title="2.1 Agent 的创建与管理"></a>2.1 Agent 的创建与管理</h3><p>创建子 Agent 使用 <code>sessions_spawn</code> 工具（这个工具就是调用大模型API的时候注入到tools工具链里面的函数）：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建设计师 Agent</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;tool&quot;</span>: <span class="string">&quot;sessions_spawn&quot;</span>,</span><br><span class="line">  <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">    <span class="string">&quot;agentId&quot;</span>: <span class="string">&quot;main&quot;</span>,              <span class="comment">// 使用哪个基础配置</span></span><br><span class="line">    <span class="string">&quot;label&quot;</span>: <span class="string">&quot;snake-designer&quot;</span>,      <span class="comment">// 给 Session 打标签</span></span><br><span class="line">    <span class="string">&quot;runTimeoutSeconds&quot;</span>: <span class="number">300</span>,       <span class="comment">// 超时时间（重要！）</span></span><br><span class="line">    <span class="string">&quot;task&quot;</span>: <span class="string">&quot;你是产品设计师，负责...&quot;</span>, <span class="comment">// 系统提示 + 任务</span></span><br><span class="line">    <span class="string">&quot;thinking&quot;</span>: <span class="string">&quot;high&quot;</span>              <span class="comment">// 思考深度</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>返回结果：</strong></p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;childSessionKey&quot;</span>: <span class="string">&quot;agent:main:subagent:605eea7d-434d-456c-b1be-f985d6dc2e74&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;runId&quot;</span>: <span class="string">&quot;c6e34f28-ae3e-4a28-97f5-69b4cd1a369c&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;status&quot;</span>: <span class="string">&quot;accepted&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;note&quot;</span>: <span class="string">&quot;auto-announces on completion&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-Agent-间通信"><a href="#2-2-Agent-间通信" class="headerlink" title="2.2 Agent 间通信"></a>2.2 Agent 间通信</h3><p>Agent 之间的通信有两种方式：</p>
+<h4 id="方式一：直接消息传递（sessions-send）"><a href="#方式一：直接消息传递（sessions-send）" class="headerlink" title="方式一：直接消息传递（sessions_send）"></a>方式一：直接消息传递（<code>sessions_send</code>）</h4><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 给设计师 Agent 发消息</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;tool&quot;</span>: <span class="string">&quot;sessions_send&quot;</span>,</span><br><span class="line">  <span class="string">&quot;sessionKey&quot;</span>: <span class="string">&quot;agent:main:subagent:605eea7d...&quot;</span>,</span><br><span class="line">  <span class="string">&quot;message&quot;</span>: <span class="string">&quot;请修改设计，改为赛博朋克风格...&quot;</span>,</span><br><span class="line">  <span class="string">&quot;timeoutSeconds&quot;</span>: <span class="number">300</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意：</strong> <code>timeoutSeconds</code> 必须设置足够长（建议 180-300 秒），因为 AI 需要时间来：</p>
+<ol>
+<li>理解请求</li>
+<li>调用工具（读写文件）</li>
+<li>生成回复</li>
+</ol>
+<h4 id="方式二：文件驱动协作（推荐）"><a href="#方式二：文件驱动协作（推荐）" class="headerlink" title="方式二：文件驱动协作（推荐）"></a>方式二：文件驱动协作（推荐）</h4><p>这是我们在实战中发现的最佳实践：</p>
+<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-tag">Agent</span> 1 (<span class="selector-tag">Designer</span>)          <span class="selector-tag">Agent</span> 2 (<span class="selector-tag">Developer</span>)          <span class="selector-tag">Agent</span> 3 (<span class="selector-tag">Tester</span>)</span><br><span class="line">     │                            │                            │</span><br><span class="line">     │  写入 <span class="selector-tag">design</span><span class="selector-class">.md</span>            │                            │</span><br><span class="line">     ├────────────────────────────┼────────────────────────────┤</span><br><span class="line">     │                            │  读取 <span class="selector-tag">design</span><span class="selector-class">.md</span>            │</span><br><span class="line">     │                            │  写入 <span class="selector-tag">snake</span><span class="selector-class">.html</span>           │</span><br><span class="line">     │                            ├────────────────────────────┤</span><br><span class="line">     │                            │                            │  读取 <span class="selector-tag">snake</span><span class="selector-class">.html</span></span><br><span class="line">     │                            │                            │  写入 <span class="selector-tag">test_report</span><span class="selector-class">.md</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>优势：</strong></p>
+<ul>
+<li>不依赖实时通信</li>
+<li>任务解耦，可异步执行</li>
+<li>产出物持久化，可追溯</li>
+</ul>
+<hr>
+<h2 id="三、实战案例：贪吃蛇游戏开发"><a href="#三、实战案例：贪吃蛇游戏开发" class="headerlink" title="三、实战案例：贪吃蛇游戏开发"></a>三、实战案例：贪吃蛇游戏开发</h2><h3 id="3-1-项目背景"><a href="#3-1-项目背景" class="headerlink" title="3.1 项目背景"></a>3.1 项目背景</h3><p>用 3 个 Agent 协作开发一个赛博朋克风格的贪吃蛇 Web 游戏，并添加道具系统。</p>
+<h3 id="3-2-Agent-分工"><a href="#3-2-Agent-分工" class="headerlink" title="3.2 Agent 分工"></a>3.2 Agent 分工</h3><table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>角色</th>
+<th>职责</th>
+<th>产出物</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Designer</td>
+<td>产品设计师</td>
+<td>界面设计、配色方案、交互设计</td>
+<td><code>design.md</code></td>
+</tr>
+<tr>
+<td>Developer</td>
+<td>前端工程师</td>
+<td>编写 HTML/CSS/JS 代码</td>
+<td><code>snake.html</code></td>
+</tr>
+<tr>
+<td>Tester</td>
+<td>测试工程师</td>
+<td>功能测试、Bug 发现、性能测试</td>
+<td><code>test_report.md</code></td>
+</tr>
+</tbody></table>
+<h3 id="3-3-主-Agent-的协调控制机制"><a href="#3-3-主-Agent-的协调控制机制" class="headerlink" title="3.3 主 Agent 的协调控制机制"></a>3.3 主 Agent 的协调控制机制</h3><p><strong>核心架构：主从协作模式</strong></p>
+<p>在多 Agent 系统中，主 Agent（Main Agent）扮演着<strong>协调者（Orchestrator）</strong>的角色，负责管理子 Agent 的生命周期、任务分配和结果汇总。</p>
+<figure class="highlight sqf"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────┐</span><br><span class="line">│                    主 <span class="built_in">Agent</span> (Q)                         │</span><br><span class="line">│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │</span><br><span class="line">│  │  Task Queue │  │ State Mgr   │  │ Result Coll │     │</span><br><span class="line">│  │  任务队列   │  │ 状态管理    │  │ 结果汇总    │         │</span><br><span class="line">│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘     │</span><br><span class="line">│         │                │                │            │</span><br><span class="line">│  ┌──────▼────────────────▼────────────────▼──────┐     │</span><br><span class="line">│  │           Coordinator 协调器                   │     │</span><br><span class="line">│  │  <span class="number">1</span>. 创建子 <span class="built_in">Agent</span> → 分配任务 → 监控进度            │     │</span><br><span class="line">│  │  <span class="number">2</span>. 收集结果 → 质量检查 → 决定是否迭代             │     │</span><br><span class="line">│  │  <span class="number">3</span>. 异常处理 → 重试/换人 → 错误上报               │     │</span><br><span class="line">│  └──────┬────────────┬────────────┬──────────-───┘     │</span><br><span class="line">└─────────┼────────────┼────────────┼───────────────────-┘</span><br><span class="line">          │            │            │</span><br><span class="line">          ▼            ▼            ▼</span><br><span class="line">    ┌─────────┐  ┌─────────┐  ┌─────────┐</span><br><span class="line">    │Designer │  │Developer│  │ Tester  │</span><br><span class="line">    │子<span class="built_in">Agent</span>  │  │子<span class="built_in">Agent</span>   │  │子<span class="built_in">Agent</span>  │</span><br><span class="line">    └────┬────┘  └────┬────┘  └────┬────┘</span><br><span class="line">         │            │            │</span><br><span class="line">         └────────────┴────────────┘</span><br><span class="line">                      │</span><br><span class="line">              ┌───────▼────────┐</span><br><span class="line">              │  共享工作区      │</span><br><span class="line">              │  design.md     │</span><br><span class="line">              │  snake.html    │</span><br><span class="line">              │  test_report.md│</span><br><span class="line">              └────────────────┘</span><br></pre></td></tr></table></figure>
+
+<p><strong>主 Agent 的核心职责：</strong></p>
+<table>
+<thead>
+<tr>
+<th>职责</th>
+<th>说明</th>
+<th>实现方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>任务分解</strong></td>
+<td>将大任务拆分为可并行/串行的子任务</td>
+<td>人工分析 + AI 辅助</td>
+</tr>
+<tr>
+<td><strong>生命周期管理</strong></td>
+<td>创建、监控、终止子 Agent</td>
+<td><code>sessions_spawn</code> / <code>subagents</code></td>
+</tr>
+<tr>
+<td><strong>状态同步</strong></td>
+<td>跟踪每个子 Agent 的工作状态</td>
+<td>文件状态检查 + 心跳检测</td>
+</tr>
+<tr>
+<td><strong>结果聚合</strong></td>
+<td>收集各子 Agent 产出，整合最终成果</td>
+<td>读取文件 + 质量评估</td>
+</tr>
+<tr>
+<td><strong>异常处理</strong></td>
+<td>处理超时、错误、质量不达标等情况</td>
+<td>重试、重新分配、降级</td>
+</tr>
+</tbody></table>
+<p><strong>协调流程示例（带状态检查）：</strong></p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 主 Agent 协调伪代码</span></span><br><span class="line"><span class="keyword">async</span> <span class="function"><span class="keyword">function</span> <span class="title">coordinateGameDevelopment</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> results = &#123;&#125;;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// Phase 1: 并行启动设计和开发（如果设计文档已存在）</span></span><br><span class="line">  <span class="comment">// 或者先启动设计，等设计完成后再启动开发</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 步骤1：创建设计师</span></span><br><span class="line">  <span class="keyword">const</span> designer = <span class="keyword">await</span> sessions_spawn(&#123;</span><br><span class="line">    label: <span class="string">&quot;snake-designer&quot;</span>,</span><br><span class="line">    task: <span class="string">&quot;设计赛博朋克风格贪吃蛇游戏...&quot;</span>,</span><br><span class="line">    runTimeoutSeconds: <span class="number">300</span></span><br><span class="line">  &#125;);</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 步骤2：等待设计完成（阻塞等待）</span></span><br><span class="line">  <span class="comment">// OpenClaw 的 sessions_spawn 是异步的，通过返回的 childSessionKey 后续检查</span></span><br><span class="line">  results.designer = &#123; <span class="attr">sessionKey</span>: designer.childSessionKey, <span class="attr">status</span>: <span class="string">&quot;running&quot;</span> &#125;;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 步骤3：轮询检查设计是否完成（通过检查文件是否存在）</span></span><br><span class="line">  <span class="keyword">while</span> (!<span class="keyword">await</span> fileExists(<span class="string">&quot;snake/design.md&quot;</span>)) &#123;</span><br><span class="line">    <span class="keyword">await</span> sleep(<span class="number">5000</span>); <span class="comment">// 每5秒检查一次</span></span><br><span class="line">    <span class="comment">// 检查是否超时或失败</span></span><br><span class="line">    <span class="keyword">const</span> status = <span class="keyword">await</span> checkSessionStatus(designer.childSessionKey);</span><br><span class="line">    <span class="keyword">if</span> (status === <span class="string">&quot;failed&quot;</span>) &#123;</span><br><span class="line">      <span class="comment">// 重试或报错</span></span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">&quot;Designer failed&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 步骤4：设计完成，创建开发者</span></span><br><span class="line">  <span class="keyword">const</span> developer = <span class="keyword">await</span> sessions_spawn(&#123;</span><br><span class="line">    label: <span class="string">&quot;snake-developer&quot;</span>,</span><br><span class="line">    task: <span class="string">&quot;根据 design.md 编写代码...&quot;</span>,</span><br><span class="line">    runTimeoutSeconds: <span class="number">600</span></span><br><span class="line">  &#125;);</span><br><span class="line">  results.developer = &#123; <span class="attr">sessionKey</span>: developer.childSessionKey, <span class="attr">status</span>: <span class="string">&quot;running&quot;</span> &#125;;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 步骤5：等待开发完成</span></span><br><span class="line">  <span class="keyword">while</span> (!<span class="keyword">await</span> fileExists(<span class="string">&quot;snake/snake.html&quot;</span>)) &#123;</span><br><span class="line">    <span class="keyword">await</span> sleep(<span class="number">5000</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 步骤6：开发完成，创建测试员</span></span><br><span class="line">  <span class="keyword">const</span> tester = <span class="keyword">await</span> sessions_spawn(&#123;</span><br><span class="line">    label: <span class="string">&quot;snake-tester&quot;</span>,</span><br><span class="line">    task: <span class="string">&quot;测试 snake.html 并生成报告...&quot;</span>,</span><br><span class="line">    runTimeoutSeconds: <span class="number">300</span></span><br><span class="line">  &#125;);</span><br><span class="line">  results.tester = &#123; <span class="attr">sessionKey</span>: tester.childSessionKey, <span class="attr">status</span>: <span class="string">&quot;running&quot;</span> &#125;;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 步骤7：等待测试完成，收集结果</span></span><br><span class="line">  <span class="keyword">while</span> (!<span class="keyword">await</span> fileExists(<span class="string">&quot;snake/test_report.md&quot;</span>)) &#123;</span><br><span class="line">    <span class="keyword">await</span> sleep(<span class="number">5000</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 步骤8：评估测试结果</span></span><br><span class="line">  <span class="keyword">const</span> report = <span class="keyword">await</span> readFile(<span class="string">&quot;snake/test_report.md&quot;</span>);</span><br><span class="line">  <span class="keyword">if</span> (report.includes(<span class="string">&quot;FAIL&quot;</span>)) &#123;</span><br><span class="line">    <span class="comment">// 测试失败，决定是修复还是重新开发</span></span><br><span class="line">    <span class="keyword">await</span> sessions_send(&#123;</span><br><span class="line">      sessionKey: results.developer.sessionKey,</span><br><span class="line">      message: <span class="string">&quot;根据测试报告修复问题...&quot;</span></span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">return</span> results;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键协调策略：</strong></p>
+<ol>
+<li><p><strong>串行依赖管理</strong></p>
+<ul>
+<li>开发依赖设计（必须等 design.md 完成）</li>
+<li>测试依赖开发（必须等 snake.html 完成）</li>
+<li>主 Agent 通过<strong>文件存在性检查</strong>实现流程控制</li>
+</ul>
+</li>
+<li><p><strong>状态监控机制</strong></p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 检查子 Agent 状态</span></span><br><span class="line">subagents(&#123; <span class="attr">action</span>: <span class="string">&quot;list&quot;</span> &#125;)</span><br><span class="line"><span class="comment">// 返回每个子 Agent 的活跃状态、token 使用量、最后更新时间</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>质量门禁（Quality Gate）</strong></p>
+<ul>
+<li>每个阶段产出必须经过检查才能进入下一阶段</li>
+<li>检查方式：文件内容审查、自动测试、人工确认</li>
+</ul>
+</li>
+<li><p><strong>异常恢复策略</strong></p>
+<table>
+<thead>
+<tr>
+<th>异常情况</th>
+<th>处理策略</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>子 Agent 超时</td>
+<td>发送继续指令或重新创建</td>
+</tr>
+<tr>
+<td>产出质量不达标</td>
+<td>打回重做，附带具体修改意见</td>
+</tr>
+<tr>
+<td>子 Agent 崩溃</td>
+<td>重新 spawn，继承相同任务</td>
+</tr>
+<tr>
+<td>循环依赖/死锁</td>
+<td>人工介入，调整任务拆分</td>
+</tr>
+</tbody></table>
+</li>
+</ol>
+<h3 id="3-4-第一轮开发：基础游戏"><a href="#3-4-第一轮开发：基础游戏" class="headerlink" title="3.4 第一轮开发：基础游戏"></a>3.4 第一轮开发：基础游戏</h3><p><strong>工作流程：</strong></p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 1. 创建设计师</span></span><br><span class="line">sessions_spawn(&#123;</span><br><span class="line">  label: <span class="string">&quot;snake-designer&quot;</span>,</span><br><span class="line">  task: <span class="string">&quot;设计贪吃蛇游戏界面...&quot;</span></span><br><span class="line">&#125;)</span><br><span class="line"><span class="comment">// 产出：design.md（现代简洁风格）</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 创建开发者（需等待设计完成）</span></span><br><span class="line">sessions_spawn(&#123;</span><br><span class="line">  label: <span class="string">&quot;snake-developer&quot;</span>, </span><br><span class="line">  task: <span class="string">&quot;根据设计文档编写代码...&quot;</span></span><br><span class="line">&#125;)</span><br><span class="line"><span class="comment">// 产出：snake.html（可运行的游戏）</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 3. 创建测试员（需等待开发完成）</span></span><br><span class="line">sessions_spawn(&#123;</span><br><span class="line">  label: <span class="string">&quot;snake-tester&quot;</span>,</span><br><span class="line">  task: <span class="string">&quot;测试游戏功能...&quot;</span></span><br><span class="line">&#125;)</span><br><span class="line"><span class="comment">// 产出：test_report.md</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-5-第二轮迭代：赛博朋克风格改造"><a href="#3-5-第二轮迭代：赛博朋克风格改造" class="headerlink" title="3.5 第二轮迭代：赛博朋克风格改造"></a>3.5 第二轮迭代：赛博朋克风格改造</h3><p><strong>工作流程：</strong></p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 1. 给设计师发消息要求改版</span></span><br><span class="line">sessions_send(&#123;</span><br><span class="line">  sessionKey: <span class="string">&quot;designer-session-key&quot;</span>,</span><br><span class="line">  message: <span class="string">&quot;改为赛博朋克霓虹风格...&quot;</span></span><br><span class="line">&#125;)</span><br><span class="line"><span class="comment">// 产出：更新的 design.md</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 给开发者发消息要求重写代码</span></span><br><span class="line">sessions_send(&#123;</span><br><span class="line">  sessionKey: <span class="string">&quot;developer-session-key&quot;</span>,</span><br><span class="line">  message: <span class="string">&quot;根据新设计重写代码...&quot;</span></span><br><span class="line">&#125;)</span><br><span class="line"><span class="comment">// 产出：更新的 snake.html（霓虹效果）</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 3. 给测试员发消息要求重新测试</span></span><br><span class="line">sessions_send(&#123;</span><br><span class="line">  sessionKey: <span class="string">&quot;tester-session-key&quot;</span>, </span><br><span class="line">  message: <span class="string">&quot;重新测试新版本...&quot;</span></span><br><span class="line">&#125;)</span><br><span class="line"><span class="comment">// 产出：更新的 test_report.md</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-6-项目产出"><a href="#3-6-项目产出" class="headerlink" title="3.6 项目产出"></a>3.6 项目产出</h3><p>最终产出文件：</p>
+<figure class="highlight 1c"><table><tr><td class="code"><pre><span class="line">snake/</span><br><span class="line">├── design.md              <span class="meta"># 完整设计文档（含道具系统）</span></span><br><span class="line">├── snake.html             <span class="meta"># 可运行的赛博朋克贪吃蛇</span></span><br><span class="line">├── test_report.md         <span class="meta"># 原始测试报告</span></span><br><span class="line">├── test_report_cyberpunk.md  <span class="meta"># 赛博朋克版测试报告  </span></span><br><span class="line">└── test_report_powerup.md    <span class="meta"># 道具系统测试报告</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="四、遇到的问题与解决方案"><a href="#四、遇到的问题与解决方案" class="headerlink" title="四、遇到的问题与解决方案"></a>四、遇到的问题与解决方案</h2><h3 id="4-1-问题一：Session-发送超时"><a href="#4-1-问题一：Session-发送超时" class="headerlink" title="4.1 问题一：Session 发送超时"></a>4.1 问题一：Session 发送超时</h3><p><strong>现象：</strong></p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;status&quot;</span>: <span class="string">&quot;timeout&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;error&quot;</span>: <span class="string">&quot;Request timed out&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因：</strong> <code>timeoutSeconds</code> 设置太短（120秒），AI 需要时间思考 + 执行工具 + 回复。</p>
+<p><strong>解决：</strong> 设置 <code>timeoutSeconds: 300</code>（5分钟）或更长。</p>
+<h3 id="4-2-问题二：Channel-访问限制"><a href="#4-2-问题二：Channel-访问限制" class="headerlink" title="4.2 问题二：Channel 访问限制"></a>4.2 问题二：Channel 访问限制</h3><p><strong>现象：</strong></p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">&quot;status&quot;</span>: <span class="string">&quot;forbidden&quot;</span>,</span><br><span class="line">  <span class="attr">&quot;error&quot;</span>: <span class="string">&quot;Session send visibility is restricted to the current session tree&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>原因：</strong> WebChat 渠道对跨 Session 通信有限制。</p>
+<p><strong>解决：</strong> </p>
+<ul>
+<li>使用文件驱动协作（推荐）</li>
+<li>或在同一 Session 树内通信</li>
+</ul>
+<hr>
+<h2 id="五、多-Agent-协作的最佳实践"><a href="#五、多-Agent-协作的最佳实践" class="headerlink" title="五、多 Agent 协作的最佳实践"></a>五、多 Agent 协作的最佳实践</h2><h3 id="5-1-工作流设计原则"><a href="#5-1-工作流设计原则" class="headerlink" title="5.1 工作流设计原则"></a>5.1 工作流设计原则</h3><ol>
+<li><strong>单一职责</strong>：每个 Agent 只做一件事（设计/开发/测试）</li>
+<li><strong>文件驱动</strong>：通过共享文件传递信息</li>
+<li><strong>标签管理</strong>：给 Agent 打有意义的 label（snake-designer）</li>
+<li><strong>超时设置</strong>：预留足够时间（300秒以上）</li>
+</ol>
+<h3 id="5-2-推荐的协作模式"><a href="#5-2-推荐的协作模式" class="headerlink" title="5.2 推荐的协作模式"></a>5.2 推荐的协作模式</h3><p><strong>串行模式（适合有依赖关系的任务）：</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">需求分析 → 架构设计 → 模块开发 → 集成测试</span><br></pre></td></tr></table></figure>
+
+<p><strong>并行模式（适合独立子任务）：</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">        ┌→ 前端开发 ┐</span><br><span class="line">架构设计 ┼→ 后端开发 ┼→ 集成测试</span><br><span class="line">        └→ 文档编写 ┘</span><br></pre></td></tr></table></figure>
+
+<p><strong>混合模式（实际项目推荐）：</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">需求 → 设计 ┬→ 前端Dev ┬→ 集成 → 测试</span><br><span class="line">             └→ 后端Dev ┘</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-3-会话管理建议"><a href="#5-3-会话管理建议" class="headerlink" title="5.3 会话管理建议"></a>5.3 会话管理建议</h3><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 查看所有子 Agent</span></span><br><span class="line">subagents(&#123; <span class="attr">action</span>: <span class="string">&quot;list&quot;</span> &#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 查看 Session 历史</span></span><br><span class="line">sessions_history(&#123;</span><br><span class="line">  sessionKey: <span class="string">&quot;agent:main:subagent:xxx&quot;</span>,</span><br><span class="line">  limit: <span class="number">10</span></span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 终止不再需要的 Agent</span></span><br><span class="line">subagents(&#123; </span><br><span class="line">  action: <span class="string">&quot;kill&quot;</span>,</span><br><span class="line">  target: <span class="string">&quot;agent:main:subagent:xxx&quot;</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、总结与展望"><a href="#六、总结与展望" class="headerlink" title="六、总结与展望"></a>六、总结与展望</h2><h3 id="6-1-核心收获"><a href="#6-1-核心收获" class="headerlink" title="6.1 核心收获"></a>6.1 核心收获</h3><p>通过本次实战，我们验证了：</p>
+<ol>
+<li>✅ <strong>多 Agent 协作完全可行</strong> - 3 个 Agent 成功协作完成游戏开发</li>
+<li>✅ <strong>文件驱动高效</strong> - 无需实时通信，异步协作效果好</li>
+<li>✅ <strong>适合复杂任务</strong> - 每个 Agent 专注自己的领域，质量更高</li>
+</ol>
+<h3 id="6-2-适用场景"><a href="#6-2-适用场景" class="headerlink" title="6.2 适用场景"></a>6.2 适用场景</h3><p>OpenClaw 多 Agent 协作特别适合：</p>
+<ul>
+<li>🎮 <strong>游戏开发</strong> - 设计 + 开发 + 测试并行</li>
+<li>📝 <strong>文档编写</strong> - 大纲 + 正文 + 校对分工</li>
+<li>🎨 <strong>创意设计</strong> - 概念 + 细化 + 评审</li>
+<li>💻 <strong>软件开发</strong> - 架构 + 编码 + 测试 + 文档</li>
+</ul>
+<h3 id="6-3-未来展望"><a href="#6-3-未来展望" class="headerlink" title="6.3 未来展望"></a>6.3 未来展望</h3><p>多 Agent 系统的发展方向：</p>
+<ol>
+<li><strong>更智能的调度</strong> - AI 自动决定创建哪些 Agent</li>
+<li><strong>Agent 间直接通信</strong> - 无需通过父 Agent 中转</li>
+<li><strong>长期记忆共享</strong> - 所有 Agent 访问共同的知识库</li>
+<li><strong>可视化监控</strong> - 实时查看各 Agent 状态</li>
+</ol>
+<hr>
+<h2 id="附录：完整-API-参考"><a href="#附录：完整-API-参考" class="headerlink" title="附录：完整 API 参考"></a>附录：完整 API 参考</h2><h3 id="创建子-Agent"><a href="#创建子-Agent" class="headerlink" title="创建子 Agent"></a>创建子 Agent</h3><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">sessions_spawn(&#123;</span><br><span class="line">  agentId?: string,          <span class="comment">// 基础 Agent 配置</span></span><br><span class="line">  label?: string,            <span class="comment">// Session 标签</span></span><br><span class="line">  runTimeoutSeconds?: number, <span class="comment">// 超时时间（秒）</span></span><br><span class="line">  task: string,              <span class="comment">// 任务描述</span></span><br><span class="line">  thinking?: <span class="string">&quot;low&quot;</span> | <span class="string">&quot;medium&quot;</span> | <span class="string">&quot;high&quot;</span>  <span class="comment">// 思考深度</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="发送消息"><a href="#发送消息" class="headerlink" title="发送消息"></a>发送消息</h3><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">sessions_send(&#123;</span><br><span class="line">  sessionKey: string,        <span class="comment">// 目标 Session</span></span><br><span class="line">  message: string,           <span class="comment">// 消息内容</span></span><br><span class="line">  timeoutSeconds?: number    <span class="comment">// 等待回复的超时</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="管理子-Agent"><a href="#管理子-Agent" class="headerlink" title="管理子 Agent"></a>管理子 Agent</h3><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 列出所有子 Agent</span></span><br><span class="line">subagents(&#123; <span class="attr">action</span>: <span class="string">&quot;list&quot;</span> &#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 查看历史</span></span><br><span class="line">sessions_history(&#123;</span><br><span class="line">  sessionKey: string,</span><br><span class="line">  limit?: number</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 终止 Agent</span></span><br><span class="line">subagents(&#123;</span><br><span class="line">  action: <span class="string">&quot;kill&quot;</span>,</span><br><span class="line">  target: string</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/AI%E5%BC%80%E5%8F%91/">AI开发</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/OpenClaw/">OpenClaw</a><a href="/tags/Multi-Agent/">Multi-Agent</a><a href="/tags/AI协作/">AI协作</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://yoursite.com/2026/02/26/openclaw-sub-agent-design/" data-title="OpenClaw多Agent协作开发实践：从原理到实践 | C的博客" data-tsina="" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+
+<div class="next">
+<a href="/2024/06/26/I-m-back/"  title="我又回来了，博客好久没更新了">
+ <strong>下一篇：</strong><br/> 
+ <span>我又回来了，博客好久没更新了
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+
+<section id="comments" class="comment">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+
+
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#OpenClaw-%E5%A4%9A-Agent-%E5%8D%8F%E4%BD%9C%E5%BC%80%E5%8F%91%E5%AE%9E%E6%88%98%EF%BC%9A%E4%BB%8E%E5%8E%9F%E7%90%86%E5%88%B0%E5%AE%9E%E8%B7%B5"><span class="toc-number">1.</span> <span class="toc-text">OpenClaw 多 Agent 协作开发实战：从原理到实践</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81OpenClaw-%E7%9A%84%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1"><span class="toc-number">1.2.</span> <span class="toc-text">一、OpenClaw 的架构设计</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="toc-number">1.2.1.</span> <span class="toc-text">1.1 核心概念</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%A4%9A-Agent-%E5%8D%8F%E4%BD%9C%E7%9A%84%E6%A0%B8%E5%BF%83%E6%9C%BA%E5%88%B6"><span class="toc-number">1.3.</span> <span class="toc-text">二、多 Agent 协作的核心机制</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-Agent-%E7%9A%84%E5%88%9B%E5%BB%BA%E4%B8%8E%E7%AE%A1%E7%90%86"><span class="toc-number">1.3.1.</span> <span class="toc-text">2.1 Agent 的创建与管理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-Agent-%E9%97%B4%E9%80%9A%E4%BF%A1"><span class="toc-number">1.3.2.</span> <span class="toc-text">2.2 Agent 间通信</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%96%B9%E5%BC%8F%E4%B8%80%EF%BC%9A%E7%9B%B4%E6%8E%A5%E6%B6%88%E6%81%AF%E4%BC%A0%E9%80%92%EF%BC%88sessions-send%EF%BC%89"><span class="toc-number">1.3.2.1.</span> <span class="toc-text">方式一：直接消息传递（sessions_send）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%96%B9%E5%BC%8F%E4%BA%8C%EF%BC%9A%E6%96%87%E4%BB%B6%E9%A9%B1%E5%8A%A8%E5%8D%8F%E4%BD%9C%EF%BC%88%E6%8E%A8%E8%8D%90%EF%BC%89"><span class="toc-number">1.3.2.2.</span> <span class="toc-text">方式二：文件驱动协作（推荐）</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B%EF%BC%9A%E8%B4%AA%E5%90%83%E8%9B%87%E6%B8%B8%E6%88%8F%E5%BC%80%E5%8F%91"><span class="toc-number">1.4.</span> <span class="toc-text">三、实战案例：贪吃蛇游戏开发</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E9%A1%B9%E7%9B%AE%E8%83%8C%E6%99%AF"><span class="toc-number">1.4.1.</span> <span class="toc-text">3.1 项目背景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-Agent-%E5%88%86%E5%B7%A5"><span class="toc-number">1.4.2.</span> <span class="toc-text">3.2 Agent 分工</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E4%B8%BB-Agent-%E7%9A%84%E5%8D%8F%E8%B0%83%E6%8E%A7%E5%88%B6%E6%9C%BA%E5%88%B6"><span class="toc-number">1.4.3.</span> <span class="toc-text">3.3 主 Agent 的协调控制机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-%E7%AC%AC%E4%B8%80%E8%BD%AE%E5%BC%80%E5%8F%91%EF%BC%9A%E5%9F%BA%E7%A1%80%E6%B8%B8%E6%88%8F"><span class="toc-number">1.4.4.</span> <span class="toc-text">3.4 第一轮开发：基础游戏</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-5-%E7%AC%AC%E4%BA%8C%E8%BD%AE%E8%BF%AD%E4%BB%A3%EF%BC%9A%E8%B5%9B%E5%8D%9A%E6%9C%8B%E5%85%8B%E9%A3%8E%E6%A0%BC%E6%94%B9%E9%80%A0"><span class="toc-number">1.4.5.</span> <span class="toc-text">3.5 第二轮迭代：赛博朋克风格改造</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-6-%E9%A1%B9%E7%9B%AE%E4%BA%A7%E5%87%BA"><span class="toc-number">1.4.6.</span> <span class="toc-text">3.6 项目产出</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E9%81%87%E5%88%B0%E7%9A%84%E9%97%AE%E9%A2%98%E4%B8%8E%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">1.5.</span> <span class="toc-text">四、遇到的问题与解决方案</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E9%97%AE%E9%A2%98%E4%B8%80%EF%BC%9ASession-%E5%8F%91%E9%80%81%E8%B6%85%E6%97%B6"><span class="toc-number">1.5.1.</span> <span class="toc-text">4.1 问题一：Session 发送超时</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E9%97%AE%E9%A2%98%E4%BA%8C%EF%BC%9AChannel-%E8%AE%BF%E9%97%AE%E9%99%90%E5%88%B6"><span class="toc-number">1.5.2.</span> <span class="toc-text">4.2 问题二：Channel 访问限制</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E5%A4%9A-Agent-%E5%8D%8F%E4%BD%9C%E7%9A%84%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">1.6.</span> <span class="toc-text">五、多 Agent 协作的最佳实践</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E5%B7%A5%E4%BD%9C%E6%B5%81%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99"><span class="toc-number">1.6.1.</span> <span class="toc-text">5.1 工作流设计原则</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E6%8E%A8%E8%8D%90%E7%9A%84%E5%8D%8F%E4%BD%9C%E6%A8%A1%E5%BC%8F"><span class="toc-number">1.6.2.</span> <span class="toc-text">5.2 推荐的协作模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E4%BC%9A%E8%AF%9D%E7%AE%A1%E7%90%86%E5%BB%BA%E8%AE%AE"><span class="toc-number">1.6.3.</span> <span class="toc-text">5.3 会话管理建议</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%80%BB%E7%BB%93%E4%B8%8E%E5%B1%95%E6%9C%9B"><span class="toc-number">1.7.</span> <span class="toc-text">六、总结与展望</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E6%A0%B8%E5%BF%83%E6%94%B6%E8%8E%B7"><span class="toc-number">1.7.1.</span> <span class="toc-text">6.1 核心收获</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">1.7.2.</span> <span class="toc-text">6.2 适用场景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E6%9C%AA%E6%9D%A5%E5%B1%95%E6%9C%9B"><span class="toc-number">1.7.3.</span> <span class="toc-text">6.3 未来展望</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%99%84%E5%BD%95%EF%BC%9A%E5%AE%8C%E6%95%B4-API-%E5%8F%82%E8%80%83"><span class="toc-number">1.8.</span> <span class="toc-text">附录：完整 API 参考</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E5%AD%90-Agent"><span class="toc-number">1.8.1.</span> <span class="toc-text">创建子 Agent</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%91%E9%80%81%E6%B6%88%E6%81%AF"><span class="toc-number">1.8.2.</span> <span class="toc-text">发送消息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%A1%E7%90%86%E5%AD%90-Agent"><span class="toc-number">1.8.3.</span> <span class="toc-text">管理子 Agent</span></a></li></ol></li></ol></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/AI开发/" title="AI开发">AI开发<sup>1</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Blockchain/" title="Blockchain">Blockchain<sup>7</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/C/" title="C++">C++<sup>1</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>5</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/LetCode/" title="LetCode">LetCode<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/Mac应用/" title="Mac应用">Mac应用<sup>4</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/iOS/" title="iOS">iOS<sup>28</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/iOS安全/" title="iOS安全">iOS安全<sup>2</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/其他/" title="其他">其他<sup>1</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/博文推荐/" title="博文推荐">博文推荐<sup>1</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/安全/" title="安全">安全<sup>1</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/底层原理/" title="底层原理">底层原理<sup>2</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/数据库/" title="数据库">数据库<sup>1</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/架构与设计/" title="架构与设计">架构与设计<sup>6</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/生活/" title="生活">生活<sup>3</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/网络/" title="网络">网络<sup>1</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/Swift/" title="Swift">Swift<sup>7</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/iOS/" title="iOS">iOS<sup>7</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LetCode-Easy/" title="LetCode-Easy">LetCode-Easy<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Ethereum/" title="Ethereum">Ethereum<sup>6</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/可扩展/" title="可扩展">可扩展<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/安全/" title="安全">安全<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/LetCode-Medium/" title="LetCode-Medium">LetCode-Medium<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Mac/" title="Mac">Mac<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/类库/" title="类库">类库<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/goroutine/" title="goroutine">goroutine<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/UI/" title="UI">UI<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/PHP/" title="PHP">PHP<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/iOS动画/" title="iOS动画">iOS动画<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Tree/" title="Tree">Tree<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/runtime/" title="runtime">runtime<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/感想/" title="感想">感想<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Mac应用/" title="Mac应用">Mac应用<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/逆向工程/" title="逆向工程">逆向工程<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/异常/" title="异常">异常<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/博文推荐/" title="博文推荐">博文推荐<sup>1</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="linkslist">
+  <p class="asidetitle">友情链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="https://www.google.com.hk" target="_blank" title="共同的老师">共同的老师</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://tengj.top" target="_blank" title="嘟嘟独立博客">嘟嘟独立博客</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://blog.6ag.cn" target="_blank" title="六阿哥博客">六阿哥博客</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+  
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> 无立足境，是方干净 <br/>
+			</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		
+		<a href="https://github.com/cocos543" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2026 
+		
+		<a href="/about" target="_blank" title="Cocos">Cocos</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<div class="hoverqrcode clearfix"></div>',
+  '<a class="overlay" id="qrcode"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+
+  $('.hoverqrcode').hide();
+
+  var myWidth = 0;
+  function updatehoverqrcode(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+    var qrsize = myWidth > 1024 ? 200:100;
+    var options = {render: 'image', size: qrsize, fill: '#2ca6cb', text: url, radius: 0.5, quiet: 1};
+    var p = $('.article-share-qrcode').position();
+    $('.hoverqrcode').empty().css('width', qrsize).css('height', qrsize)
+                          .css('left', p.left-qrsize/2+20).css('top', p.top-qrsize-10)
+                          .qrcode(options);
+  };
+  $(window).resize(function(){
+    $('.hoverqrcode').hide();
+  });
+  $('.article-share-qrcode').click(function(){
+    updatehoverqrcode();
+    $('.hoverqrcode').toggle();
+  });
+  $('.article-share-qrcode').hover(function(){}, function(){
+      $('.hoverqrcode').hide();
+  });
+});   
+</script>
+
+
+
+
+<script type="text/javascript">
+
+var disqus_shortname = 'cocosdever';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?c7eea4ba5ad764e80b289322c5854596";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>
